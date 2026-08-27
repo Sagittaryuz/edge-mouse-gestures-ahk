@@ -11,10 +11,11 @@ $RepositoryOwner = 'Sagittaryuz'
 $RepositoryName = 'edge-mouse-gestures-ahk'
 $RepositoryBranch = 'main'
 $ScriptName = 'EdgeMouseGestures.ahk'
+$CacheBuster = [DateTime]::UtcNow.Ticks
 
 $InstallDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LocalScript = Join-Path $InstallDirectory $ScriptName
-$RawUrl = "https://raw.githubusercontent.com/$RepositoryOwner/$RepositoryName/$RepositoryBranch/$ScriptName"
+$RawUrl = "https://raw.githubusercontent.com/$RepositoryOwner/$RepositoryName/$RepositoryBranch/$ScriptName?cb=$CacheBuster"
 
 function Write-UpdateMessage {
     param([string]$Message)
