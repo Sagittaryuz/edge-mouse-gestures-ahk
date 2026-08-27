@@ -11,7 +11,7 @@ $RepositoryOwner = 'Sagittaryuz'
 $RepositoryName = 'edge-mouse-gestures-ahk'
 $RepositoryBranch = 'main'
 $ScriptName = 'EdgeMouseGestures.ahk'
-$CacheBuster = [DateTime]::UtcNow.Ticks
+$CacheBuster = (Get-Date).ToUniversalTime().ToString('yyyyMMddHHmmss')
 
 $InstallDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LocalScript = Join-Path $InstallDirectory $ScriptName
