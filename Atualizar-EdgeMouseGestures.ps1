@@ -24,6 +24,22 @@ function Write-UpdateMessage {
     }
 }
 
+function Get-Sha256 {
+    param([string]$Path)
+
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    $stream = [System.IO.File]::OpenRead($Path)
+
+    try {
+        $bytes = $sha256.ComputeHash($stream)
+        return (($bytes | ForEach-Object { $_.ToString('X2') }) -join '')
+    }
+    finally {
+        $stream.Dispose()
+        $sha256.Dispose()
+    }
+}
+
 function Get-AutoHotkeyPath {
     $command = Get-Command AutoHotkey64.exe -ErrorAction SilentlyContinue
 
@@ -95,11 +111,11 @@ function Update-LocalScript {
             throw 'O GitHub não retornou o arquivo esperado.'
         }
 
-        $remoteHash = (Get-FileHash -LiteralPath $temporaryFile -Algorithm SHA256).Hash
+        $remoteHash = Get-Sha256 $temporaryFile
         $localHash = $null
 
         if (Test-Path -LiteralPath $LocalScript) {
-            $localHash = (Get-FileHash -LiteralPath $LocalScript -Algorithm SHA256).Hash
+            $localHash = Get-Sha256 $LocalScript
         }
 
         if ($localHash -eq $remoteHash) {
