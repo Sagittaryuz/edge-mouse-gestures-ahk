@@ -14,15 +14,15 @@ SetWinDelay -1
 global CFG := Map(
     ; Reconhecimento
     "SampleMs",             8,
-    "PointSpacingPx",       2,
-    "ActivationDistancePx", 30,
-    "DirectionBias",        1.25,
-    "PathSamplePx",         8,
+    "PointSpacingPx",       3,
+    "ActivationDistancePx", 60,
+    "DirectionBias",        1.60,
+    "PathSamplePx",         10,
 
     ; Troca de guia: primeiro cima, depois horizontal
-    "CompoundVerticalMinPx",   28,
-    "CompoundHorizontalMinPx", 24,
-    "CompoundAxisRatio",       2.0,
+    "CompoundVerticalMinPx",   48,
+    "CompoundHorizontalMinPx", 42,
+    "CompoundAxisRatio",       2.5,
 
     ; Aparência do traço
     "TrailColorARGB",       0xFF078BE8,
@@ -50,6 +50,9 @@ global GesturesEnabled := true
 global GestureActive := false
 global GestureClaimed := false
 global GestureConsumed := false
+global VolumeLockActive := false
+global VolumeLockX := 0
+global VolumeLockY := 0
 
 global StartX := 0
 global StartY := 0
@@ -136,7 +139,7 @@ $*MButton::HandleRButtonMediaGesture()
 AreGesturesEnabled(*) {
     global GesturesEnabled
 
-    return GesturesEnabled && !IsFullscreenActive()
+    return GesturesEnabled
 }
 
 IsGestureActive(*) {
@@ -145,84 +148,21 @@ IsGestureActive(*) {
     return GestureActive
 }
 
-IsFullscreenActive() {
-    global Trace, Hint
-
-    MouseGetPos &cursorX, &cursorY, &underCursorHwnd
-
-    if underCursorHwnd
-        && underCursorHwnd != Trace.Gui.Hwnd
-        && underCursorHwnd != Hint.Gui.Hwnd
-        && IsFullscreenWindow(underCursorHwnd)
-    {
-        return true
-    }
-
-    activeHwnd := WinExist("A")
-
-    return activeHwnd && IsFullscreenWindow(activeHwnd)
-}
-
-IsFullscreenWindow(hwnd) {
-    if !hwnd
-        return false
-
-    try className := WinGetClass("ahk_id " hwnd)
-    catch
-        return false
-
-    if className = "Progman"
-        || className = "WorkerW"
-        || className = "Shell_TrayWnd"
-        || className = "#32768"
-    {
-        return false
-    }
-
-    try WinGetPos &x, &y, &width, &height, "ahk_id " hwnd
-    catch
-        return false
-
-    if width <= 0 || height <= 0
-        return false
-
-    centerX := x + width / 2
-    centerY := y + height / 2
-
-    monitorCount := MonitorGetCount()
-
-    Loop monitorCount {
-        MonitorGet A_Index, &ml, &mt, &mr, &mb
-
-        if centerX >= ml
-            && centerX < mr
-            && centerY >= mt
-            && centerY < mb
-        {
-            tolerance := 2
-
-            return x <= ml + tolerance
-                && y <= mt + tolerance
-                && x + width >= mr - tolerance
-                && y + height >= mb - tolerance
-        }
-    }
-
-    return false
-}
-
 ; =========================
 ; VOLUME
 ; =========================
 
 IsRButtonVolumeReady(*) {
-    global GestureActive, StartX, StartY, CFG
+    global GestureActive, StartX, StartY, CFG, VolumeLockActive
 
     if !AreGesturesEnabled() || !GestureActive
         return false
 
     if !GetKeyState("RButton", "P")
         return false
+
+    if VolumeLockActive
+        return true
 
     MouseGetPos &x, &y
 
@@ -236,6 +176,13 @@ IsRButtonVolumeReady(*) {
 
 AdjustVolumeWithRButton(direction, *) {
     global CFG, GestureConsumed
+    global VolumeLockActive, VolumeLockX, VolumeLockY
+
+    if !VolumeLockActive {
+        MouseGetPos &VolumeLockX, &VolumeLockY
+        LockCursorAt(VolumeLockX, VolumeLockY)
+        VolumeLockActive := true
+    }
 
     step := CFG["VolumeStep"]
     delta := (direction > 0 ? "+" : "-") . step
@@ -248,6 +195,22 @@ AdjustVolumeWithRButton(direction, *) {
         ShowVol("Volume aumentado")
     else
         ShowVol("Volume reduzido")
+}
+
+LockCursorAt(x, y) {
+    rect := Buffer(16, 0)
+
+    NumPut("Int", x, rect, 0)
+    NumPut("Int", y, rect, 4)
+    NumPut("Int", x + 1, rect, 8)
+    NumPut("Int", y + 1, rect, 12)
+
+    DllCall("ClipCursor", "Ptr", rect)
+    DllCall("SetCursorPos", "Int", x, "Int", y)
+}
+
+ReleaseCursorLock() {
+    DllCall("ClipCursor", "Ptr", 0)
 }
 
 ; =========================
@@ -418,6 +381,7 @@ BeginGesture(*) {
     global GestureActive
     global GestureClaimed
     global GestureConsumed
+    global VolumeLockActive
 
     global StartX
     global StartY
@@ -443,6 +407,8 @@ BeginGesture(*) {
 
     if GestureActive
         return
+
+    VolumeLockActive := false
 
     ; Ativa imediatamente a janela sob o cursor.
     MouseGetPos &StartX, &StartY, &targetHwnd
@@ -734,6 +700,7 @@ FinishGesture(*) {
     global GestureActive
     global GestureClaimed
     global GestureConsumed
+    global VolumeLockActive
     global CurrentDirection
     global Trace
     global Hint
@@ -747,6 +714,8 @@ FinishGesture(*) {
     TrackGesture()
 
     GestureActive := false
+    VolumeLockActive := false
+    ReleaseCursorLock()
 
     Trace.Clear()
     Hint.Hide()
@@ -773,6 +742,7 @@ FinishGesture(*) {
 
 CancelGesture(*) {
     global GestureActive
+    global VolumeLockActive
     global Trace
     global Hint
 
@@ -782,6 +752,8 @@ CancelGesture(*) {
     SetTimer TrackGesture, 0
 
     GestureActive := false
+    VolumeLockActive := false
+    ReleaseCursorLock()
 
     Trace.Clear()
     Hint.Hide()
@@ -818,10 +790,13 @@ ExecuteDirection(direction) {
 ; =========================
 
 Cleanup(*) {
+    global VolumeLockActive
     global Trace
     global Hint
 
     SetTimer TrackGesture, 0
+    VolumeLockActive := false
+    ReleaseCursorLock()
 
     try Hint.Hide()
     try Trace.Dispose()

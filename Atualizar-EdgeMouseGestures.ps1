@@ -25,6 +25,18 @@ function Write-UpdateMessage {
 }
 
 function Get-AutoHotkeyPath {
+    $command = Get-Command AutoHotkey64.exe -ErrorAction SilentlyContinue
+
+    if ($command) {
+        return $command.Source
+    }
+
+    $command = Get-Command AutoHotkey32.exe -ErrorAction SilentlyContinue
+
+    if ($command) {
+        return $command.Source
+    }
+
     $command = Get-Command AutoHotkey.exe -ErrorAction SilentlyContinue
 
     if ($command) {
@@ -32,9 +44,17 @@ function Get-AutoHotkeyPath {
     }
 
     $candidates = @(
+        (Join-Path ${env:ProgramFiles} 'AutoHotkey\v2\AutoHotkey64.exe'),
+        (Join-Path ${env:ProgramFiles} 'AutoHotkey\v2\AutoHotkey32.exe'),
         (Join-Path ${env:ProgramFiles} 'AutoHotkey\v2\AutoHotkey.exe'),
+        (Join-Path ${env:ProgramFiles} 'AutoHotkey\AutoHotkey64.exe'),
+        (Join-Path ${env:ProgramFiles} 'AutoHotkey\AutoHotkey32.exe'),
         (Join-Path ${env:ProgramFiles} 'AutoHotkey\AutoHotkey.exe'),
+        (Join-Path ${env:ProgramFiles(x86)} 'AutoHotkey\v2\AutoHotkey64.exe'),
+        (Join-Path ${env:ProgramFiles(x86)} 'AutoHotkey\v2\AutoHotkey32.exe'),
         (Join-Path ${env:ProgramFiles(x86)} 'AutoHotkey\v2\AutoHotkey.exe'),
+        (Join-Path ${env:ProgramFiles(x86)} 'AutoHotkey\AutoHotkey64.exe'),
+        (Join-Path ${env:ProgramFiles(x86)} 'AutoHotkey\AutoHotkey32.exe'),
         (Join-Path ${env:ProgramFiles(x86)} 'AutoHotkey\AutoHotkey.exe')
     )
 

@@ -1,5 +1,10 @@
 @echo off
 setlocal
-PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Atualizar-EdgeMouseGestures.ps1" -Launch
+set "SCRIPT_DIR=%~dp0"
+set "POWERSHELL=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"
+
+if not exist "%POWERSHELL%" set "POWERSHELL=pwsh.exe"
+
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%Atualizar-EdgeMouseGestures.ps1" -Launch
 if errorlevel 1 pause
 endlocal
