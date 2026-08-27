@@ -11,11 +11,10 @@ $RepositoryOwner = 'Sagittaryuz'
 $RepositoryName = 'edge-mouse-gestures-ahk'
 $RepositoryBranch = 'main'
 $ScriptName = 'EdgeMouseGestures.ahk'
-$CacheBuster = (Get-Date).ToUniversalTime().ToString('yyyyMMddHHmmss')
 
 $InstallDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LocalScript = Join-Path $InstallDirectory $ScriptName
-$RawUrl = "https://raw.githubusercontent.com/$RepositoryOwner/$RepositoryName/$RepositoryBranch/$ScriptName?cb=$CacheBuster"
+$CommitApiUrl = "https://api.github.com/repos/$RepositoryOwner/$RepositoryName/commits/$RepositoryBranch"
 
 function Write-UpdateMessage {
     param([string]$Message)
@@ -51,13 +50,26 @@ function Get-AutoHotkeyPath {
 function Update-LocalScript {
     $temporaryFile = Join-Path $env:TEMP ("EdgeMouseGestures-{0}.ahk" -f ([guid]::NewGuid().ToString('N')))
     $backupFile = "$LocalScript.bak"
+    $headers = @{
+        'User-Agent' = 'EdgeMouseGestures-Updater'
+        'Accept' = 'application/vnd.github+json'
+        'Cache-Control' = 'no-cache'
+    }
 
     try {
+        $latestCommit = (Invoke-RestMethod -Uri $CommitApiUrl -UseBasicParsing -Headers $headers).sha
+
+        if (-not $latestCommit -or $latestCommit -notmatch '^[0-9a-f]{40}$') {
+            throw 'O GitHub não retornou um commit válido.'
+        }
+
+        $rawUrl = "https://raw.githubusercontent.com/$RepositoryOwner/$RepositoryName/$latestCommit/$ScriptName"
+
         Invoke-WebRequest `
-            -Uri $RawUrl `
+            -Uri $rawUrl `
             -OutFile $temporaryFile `
             -UseBasicParsing `
-            -Headers @{ 'Cache-Control' = 'no-cache' }
+            -Headers $headers
 
         if (-not (Test-Path -LiteralPath $temporaryFile)) {
             throw 'O GitHub não retornou o arquivo esperado.'

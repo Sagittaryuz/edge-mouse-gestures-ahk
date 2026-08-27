@@ -19,7 +19,7 @@ Script de gestos do mouse para Windows, feito para AutoHotkey v2.
 2. Copie `Atualizar-EdgeMouseGestures.ps1`, `Iniciar-EdgeMouseGestures.cmd` e `EdgeMouseGestures.ahk` para a mesma pasta.
 3. Execute `Iniciar-EdgeMouseGestures.cmd`.
 
-O iniciador consulta o arquivo publicado no GitHub antes de executar o script. Se houver uma versão nova, ele cria uma cópia `.bak` da versão anterior e atualiza o arquivo local.
+O iniciador consulta o commit atual publicado no GitHub antes de executar o script. Se houver uma versão nova, ele cria uma cópia `.bak` da versão anterior e atualiza o arquivo local.
 
 ## Arquivos instalados
 
